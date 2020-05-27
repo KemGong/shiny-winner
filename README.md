@@ -1,11 +1,67 @@
 Docker环境中使用 Gerrte/Jenkins
 
+Docker安装
+1. Older versions of Docker were called docker, docker.io, or docker-engine. If these are installed, uninstall them:
+
+ sudo apt-get remove docker docker-engine docker.io containerd runc
+2. Install packages to allow apt to use a repository over HTTPS:
+
+ sudo apt-get install apt-transport-https ca-certificates curl gnupg-agent software-properties-common
+3. Add Docker’s official GPG key:
+
+ curl -fsSL https://download.docker.com/linux/ubuntu/gpg | sudo apt-key add -
+Verify that you now have the key with the fingerprint 9DC8 5822 9FC7 DD38 854A E2D8 8D81 803C 0EBF CD88, by searching for the last 8 characters of the fingerprint.
+
+ $ sudo apt-key fingerprint 0EBFCD88  
+ pub   rsa4096 2017-02-22 [SCEA]
+       9DC8 5822 9FC7 DD38 854A  E2D8 8D81 803C 0EBF CD88
+ uid           [ unknown] Docker Release (CE deb) <docker@docker.com>
+ sub   rsa4096 2017-02-22 [S]
+4. Use the following command to set up the stable repository.
+
+ sudo add-apt-repository "deb [arch=amd64] https://download.docker.com/linux/ubuntu $(lsb_release -cs) stable"
+5. Update the apt package index and install the latest version of Docker Engine - Community and containerd
+
+ sudo apt-get update
+ sudo apt-get install docker-ce docker-ce-cli containerd.io
+6. Verify that Docker Engine - Community is installed correctly by running the hello-world image.
+
+ sudo docker run hello-world
+Manage Docker as a non-root user
+1. Create the docker group.
+
+ sudo groupadd docker
+2. Add your user to the docker group.
+
+ sudo usermod -aG docker $USER
+3. Log out and log back in so that your group membership is re-evaluated. On Linux, you can also run the following command to activate the changes to groups:
+
+ newgrp docker 
+4. Verify that you can run docker commands without sudo.
+
+ docker run hello-world
+Install Docker Compose
+1. Run this command to download the current stable release of Docker Compose:
+
+ sudo curl -L "https://github.com/docker/compose/releases/download/1.25.4/docker-compose-$(uname -s)-$(uname -m)" -o /usr/local/bin/docker-compose
+2. Apply executable permissions to the binary:
+
+ sudo chmod +x /usr/local/bin/docker-compose
+
 Jenkins环境搭建
 1.获取 Jenkins
  docker pull jenkins/jenkins
  
-2.启动 Jenkins
-  java -jar jenkins.war --httpPort=8080
+2.在docker中运行 Jenkins
+docker run -d -v jenkins_home:/var/jenkins_home -p 8081:8080 -p 50000:50000 jenkins/jenkins:lts
+or(二选一)
+ docker run -p 8080:8080 -p 50000:50000 -v ~/cicd/jenkins:/var/jenkins_home -v $(which docker):/usr/bin/docker -v /var/run/docker.sock:/var/run/docker.sock -u root --privileged -d jenkins/jenkins
+
+Unlock Jenkins路径在docker下，查找 方式
+1. 查找jinkins Id
+docker container ls
+2. 进入到docker中Jenkins的位置
+docker exec -it 0a0d046850f0 /bin/bash
 
 3.登陆并初始化Jenkins
  3.1.在浏览器中输出http://localhost:8080 ，打开Jenkins页面，等待初始化。
@@ -53,16 +109,16 @@ Additional Behaviours要添加Strategy for choosing what to build并设置为Ger
 
 Gerrit搭建
 1.获取Gerrit
-java -jar gerrit*.war init -d ~/gerrittest
+docker pull gerritcodereview/gerrit
 
-2.填写配置信息
-配置文件的路径在/home/ken/gerrittest/etc/gerrit.config
+2.运行Gerrit
+docker run -d -v `pwd`/gerrit_volume:/var/gerrit/review_site -p 8080:8080 -p 29418:29418 --env CANONICAL_WEB_URL=http://localhost gerritcodereview/gerrit
 
-3.启动Gerrit
-/home/ken/gerrittest/bin/gerrit.sh start
+github参考链接：
+https://github.com/GerritCodeReview/docker-gerrit/blob/master/README.md
 
 4.登陆Gerrit
-浏览器中输入http://localhost:8081进入grrite
+浏览器中输入http://localhost:8080进入grrite
 
 5.注册帐号
 NewAccount->填写信息->SAVE
